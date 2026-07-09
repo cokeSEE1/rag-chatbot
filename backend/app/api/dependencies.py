@@ -21,11 +21,22 @@ logger = logging.getLogger(__name__)
 
 @lru_cache()
 def get_cleaning_pipeline():
-    """Return a singleton CleaningPipeline instance."""
-    from app.pipeline.cleaning import CleaningPipeline
+    """Return a singleton CleaningPipeline with default steps."""
+    from app.pipeline.cleaning import (
+        BasicCleaningStep,
+        CleaningPipeline,
+        QualityFilterStep,
+        RAGChunkingStep,
+        StructureCleaningStep,
+    )
 
-    logger.info("Initialising CleaningPipeline")
-    return CleaningPipeline()
+    logger.info("Initialising CleaningPipeline with default steps")
+    pipeline = CleaningPipeline()
+    pipeline.add_step(BasicCleaningStep())
+    pipeline.add_step(StructureCleaningStep())
+    pipeline.add_step(QualityFilterStep())
+    pipeline.add_step(RAGChunkingStep())
+    return pipeline
 
 
 @lru_cache()
