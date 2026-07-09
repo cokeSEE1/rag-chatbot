@@ -1,6 +1,7 @@
 import ReactMarkdown from 'react-markdown'
 import type { Message } from '../types'
 import SourceCitation from './SourceCitation'
+import RetrievalCard from './RetrievalCard'
 
 interface MessageBubbleProps {
   message: Message
@@ -15,9 +16,16 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         {isUser ? (
           <p className="message-text">{message.content}</p>
         ) : (
-          <div className="markdown-body">
-            <ReactMarkdown>{message.content}</ReactMarkdown>
-          </div>
+          <>
+            {message.retrieval && (
+              <RetrievalCard retrieval={message.retrieval} />
+            )}
+            {message.content && (
+              <div className="markdown-body">
+                <ReactMarkdown>{message.content}</ReactMarkdown>
+              </div>
+            )}
+          </>
         )}
       </div>
       {message.sources && message.sources.length > 0 && (
