@@ -41,6 +41,38 @@ export function useChat() {
       await sendMessageStream(
         { query: query.trim(), history: historyRef.current },
         {
+          onRetrievalStart() {
+            // Create the assistant bubble early so the user sees retrieval card first
+            if (!bubbleCreated) {
+              setMessages(prev => [
+                ...prev,
+                {
+                  id: assistantId,
+                  role: 'assistant' as const,
+                  content: '',
+                  retrieval: { count: 0, latencyMs: 0, results: [] },
+                  timestamp: Date.now(),
+                },
+              ])
+              bubbleCreated = true
+            }
+          },
+          onRetrievalDone(data) {
+            setMessages(prev =>
+              prev.map(m =>
+                m.id === assistantId
+                  ? {
+                      ...m,
+                      retrieval: {
+                        count: data.count,
+                        latencyMs: data.latency_ms,
+                        results: data.results,
+                      },
+                    }
+                  : m,
+              ),
+            )
+          },
           onToken(_token) {
             if (!bubbleCreated) {
               // First token — create the assistant bubble
