@@ -1,0 +1,83 @@
+<h2>当前状态 → 目标状态</h2>
+<p class="subtitle">RAG 问答流程可视化对比：左侧是现在的体验，右侧是想要的效果</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">🔴 当前：检索过程不可见</div>
+    <div class="mockup-body" style="padding:16px;font-size:13px;line-height:1.6;background:var(--color-bg, #fff);border-radius:8px;">
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <!-- User message -->
+        <div style="display:flex;justify-content:flex-end;">
+          <div style="background:#2563eb;color:#fff;padding:10px 14px;border-radius:16px 16px 4px 16px;max-width:75%;">什么是 RAG？</div>
+        </div>
+        <!-- Typing indicator for 2s -->
+        <div style="display:flex;justify-content:flex-start;">
+          <div style="background:#f1f5f9;padding:10px 14px;border-radius:16px 16px 16px 4px;max-width:75%;">
+            <span style="color:#94a3b8;font-style:italic;">正在思考...</span>
+          </div>
+        </div>
+        <!-- Answer appears directly -->
+        <div style="display:flex;justify-content:flex-start;">
+          <div style="background:#f1f5f9;padding:10px 14px;border-radius:16px 16px 16px 4px;max-width:85%;font-size:13px;">
+            <p style="margin:0 0 6px;"><strong>RAG</strong>（检索增强生成）是一种结合信息检索和文本生成的AI架构...</p>
+            <p style="margin:0;color:#64748b;">用户不知道：检索了多少文档？检索了什么内容？耗时多久？</p>
+          </div>
+        </div>
+        <!-- Sources shown only at the end -->
+        <div style="border:1px solid #e2e8f0;border-radius:6px;padding:6px 10px;font-size:11px;color:#64748b;">
+          📎 来源（回答完成后才显示）
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">🟢 目标：检索过程清晰可见</div>
+    <div class="mockup-body" style="padding:16px;font-size:13px;line-height:1.6;background:var(--color-bg, #fff);border-radius:8px;">
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <!-- User message -->
+        <div style="display:flex;justify-content:flex-end;">
+          <div style="background:#2563eb;color:#fff;padding:10px 14px;border-radius:16px 16px 4px 16px;max-width:75%;">什么是 RAG？</div>
+        </div>
+        <!-- Step 1: Retrieval in progress -->
+        <div style="border:1px solid #bfdbfe;background:#eff6ff;border-radius:8px;padding:10px 14px;font-size:12px;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <span style="display:inline-block;width:6px;height:6px;background:#3b82f6;border-radius:50%;animation:pulse 1s infinite;"></span>
+            <strong style="color:#1e40af;">🔍 正在检索知识库...</strong>
+          </div>
+          <div style="color:#64748b;">查询："什么是 RAG？" → 向量相似度搜索 → 召回 5 个相关文档</div>
+        </div>
+        <!-- Step 2: Recall results show -->
+        <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;font-size:11px;">
+          <div style="background:#f8fafc;padding:6px 10px;color:#64748b;border-bottom:1px solid #e2e8f0;">
+            📋 已召回 <strong>5</strong> 个相关片段
+          </div>
+          <div style="padding:6px 10px;display:flex;flex-direction:column;gap:4px;">
+            <div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="background:#dbeafe;color:#1e40af;padding:1px 5px;border-radius:3px;font-weight:600;flex-shrink:0;">#1 89%</span>
+              <span style="color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">RAG 是检索增强生成的缩写，核心思想是在生成回答前先从外部知识库中检索相关信息...</span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="background:#dbeafe;color:#1e40af;padding:1px 5px;border-radius:3px;font-weight:600;flex-shrink:0;">#2 82%</span>
+              <span style="color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">RAG 工作流程：用户提问 → 向量检索 → 召回相关文档 → 拼接Prompt → LLM生成...</span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;">
+              <span style="background:#dbeafe;color:#1e40af;padding:1px 5px;border-radius:3px;font-weight:600;flex-shrink:0;">#3 75%</span>
+              <span style="color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">相比于传统LLM，RAG可以有效减少幻觉问题...</span>
+            </div>
+          </div>
+        </div>
+        <!-- Step 3: Generation -->
+        <div style="border:1px solid #dcfce7;background:#f0fdf4;border-radius:8px;padding:8px 12px;font-size:12px;">
+          <span style="color:#16a34a;">🤖 正在基于 5 个召回片段生成回答...</span>
+        </div>
+        <!-- Answer -->
+        <div style="display:flex;justify-content:flex-start;">
+          <div style="background:#f1f5f9;padding:10px 14px;border-radius:16px 16px 16px 4px;max-width:85%;font-size:13px;">
+            <p style="margin:0;"><strong>RAG</strong>（检索增强生成）是一种结合信息检索和文本生成的AI架构...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

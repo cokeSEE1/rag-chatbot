@@ -1,0 +1,156 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #fafafa; -webkit-font-smoothing: antialiased;
+    padding: 48px;
+  }
+  h2 { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+  .subtitle { font-size: 13px; color: #8a8a8a; margin: 4px 0 32px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    max-width: 800px;
+  }
+  .card {
+    background: #fff; border: 1px solid #ebebeb; border-radius: 14px;
+    padding: 28px 24px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 16px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .card:hover { border-color: #18181b; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .card.selected { border-color: #18181b; background: #fafafa; box-shadow: 0 0 0 1px #18181b; }
+
+  .logo-row { display: flex; align-items: center; gap: 12px; }
+  .logo-mark {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-text { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; color: #18181b; white-space: nowrap; }
+
+  .card-label { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; color: #18181b; }
+  .card-desc { font-size: 11.5px; color: #999; text-align: center; line-height: 1.5; }
+
+  /* Variant A - Chat + Spark */
+  .mark-a { background: #18181b; }
+  /* Variant B - Layers / Knowledge stack */
+  .mark-b { background: #18181b; }
+  /* Variant C - Minimal dot */
+  .mark-c { background: #18181b; }
+  /* Variant D - Search + Doc */
+  .mark-d { background: #18181b; }
+  /* Variant E - Abstract R */
+  .mark-e { background: #18181b; }
+  /* Variant F - Interconnected */
+  .mark-f { background: #18181b; }
+</style>
+
+<h2>Logo 方案</h2>
+<p class="subtitle">选择一个你觉得合适的，或者告诉我调整方向</p>
+
+<div class="grid">
+  <!-- A: Chat + spark/star -->
+  <div class="card" onclick="document.querySelectorAll('.card').forEach(c=>c.classList.remove('selected'));this.classList.add('selected')">
+    <div class="logo-row">
+      <div class="logo-mark mark-a">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+        </svg>
+      </div>
+      <span class="logo-text">RAG Chat</span>
+    </div>
+    <div class="card-label">A · 对话气泡</div>
+    <div class="card-desc">经典 chat bubble，直接传达对话产品属性</div>
+  </div>
+
+  <!-- B: Layers / Database + Brain -->
+  <div class="card" onclick="document.querySelectorAll('.card').forEach(c=>c.classList.remove('selected'));this.classList.add('selected')">
+    <div class="logo-row">
+      <div class="logo-mark mark-b">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="12" cy="5" rx="9" ry="3"/>
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+        </svg>
+      </div>
+      <span class="logo-text">RAG Chat</span>
+    </div>
+    <div class="card-label">B · 数据库</div>
+    <div class="card-desc">知识库/向量数据库的隐喻，强调 RAG 的检索能力</div>
+  </div>
+
+  <!-- C: Book / Knowledge -->
+  <div class="card" onclick="document.querySelectorAll('.card').forEach(c=>c.classList.remove('selected'));this.classList.add('selected')">
+    <div class="logo-row">
+      <div class="logo-mark mark-c">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          <line x1="8" y1="7" x2="16" y2="7"/>
+          <line x1="8" y1="11" x2="14" y2="11"/>
+        </svg>
+      </div>
+      <span class="logo-text">RAG Chat</span>
+    </div>
+    <div class="card-label">C · 书本/知识库</div>
+    <div class="card-desc">文档/知识库的隐喻，强调基于文档的问答</div>
+  </div>
+
+  <!-- D: Minimal geometric -->
+  <div class="card" onclick="document.querySelectorAll('.card').forEach(c=>c.classList.remove('selected'));this.classList.add('selected')">
+    <div class="logo-row">
+      <div class="logo-mark mark-d">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="14" width="4" height="7" rx="1.5"/>
+          <line x1="18" y1="14" x2="18" y2="21"/>
+        </svg>
+      </div>
+      <span class="logo-text">RAG Chat</span>
+    </div>
+    <div class="card-label">D · 模块/拼接</div>
+    <div class="card-desc">4 个模块暗示 RAG 的 Pipeline（清洗→嵌入→检索→生成）</div>
+  </div>
+
+  <!-- E: Search + Document combined -->
+  <div class="card" onclick="document.querySelectorAll('.card').forEach(c=>c.classList.remove('selected'));this.classList.add('selected')">
+    <div class="logo-row">
+      <div class="logo-mark mark-e">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="10" cy="10" r="6"/>
+          <path d="m14.5 14.5 5 5"/>
+          <path d="M7 7.5h6M7 10.5h6M7 13.5h4"/>
+        </svg>
+      </div>
+      <span class="logo-text">RAG Chat</span>
+    </div>
+    <div class="card-label">E · 搜索+文档</div>
+    <div class="card-desc">放大镜 + 文档行，直接表达"检索文档 → 回答问题"</div>
+  </div>
+
+  <!-- F: Abstract nodes/network -->
+  <div class="card" onclick="document.querySelectorAll('.card').forEach(c=>c.classList.remove('selected'));this.classList.add('selected')">
+    <div class="logo-row">
+      <div class="logo-mark mark-f">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="5" r="2.5"/>
+          <circle cx="5" cy="19" r="2.5"/>
+          <circle cx="19" cy="19" r="2.5"/>
+          <line x1="12" y1="7.5" x2="5" y2="16.5"/>
+          <line x1="12" y1="7.5" x2="19" y2="16.5"/>
+          <line x1="7" y1="17.5" x2="17" y2="17.5"/>
+        </svg>
+      </div>
+      <span class="logo-text">RAG Chat</span>
+    </div>
+    <div class="card-label">F · 知识图谱/节点</div>
+    <div class="card-desc">节点网络隐喻知识检索和关联，有技术感和辨识度</div>
+  </div>
+</div>

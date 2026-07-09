@@ -76,9 +76,15 @@ async def chat_stream(
 
     async def event_generator() -> AsyncGenerator[str, None]:
         try:
+            def _format_doc(doc: dict) -> dict:
+                return {
+                    "content": doc.get("text", ""),
+                    "metadata": doc.get("metadata", {}),
+                    "score": 1.0 - doc.get("distance", 1.0),
+                }
+
             # 1. Signal retrieval start
             yield f"data: {json.dumps({'type': 'retrieval_start'})}\n\n"
-            await asyncio.sleep(0)
 
             # 2. Retrieve with timing
             t0 = time.perf_counter()
@@ -86,16 +92,8 @@ async def chat_stream(
             latency_ms = round((time.perf_counter() - t0) * 1000)
 
             # 3. Signal retrieval done with results
-            results_data = [
-                {
-                    "content": doc.get("text", ""),
-                    "metadata": doc.get("metadata", {}),
-                    "score": 1.0 - doc.get("distance", 1.0),
-                }
-                for doc in retrieved_docs
-            ]
+            results_data = [_format_doc(d) for d in retrieved_docs]
             yield f"data: {json.dumps({'type': 'retrieval_done', 'count': len(retrieved_docs), 'latency_ms': latency_ms, 'results': results_data})}\n\n"
-            await asyncio.sleep(0)
 
             # 4. Build context for the LLM
             context_parts: list[str] = []
@@ -108,24 +106,17 @@ async def chat_stream(
                 else "暂无相关参考资料。"
             )
 
-            # 2. Build prompt
+            # 5. Build prompt
             prompt = build_rag_prompt(request.query, context, request.history)
 
-            # 3. Stream tokens — yield to event loop after each so the
+            # 6. Stream tokens — yield to event loop after each so the
             # ASGI server flushes every SSE event to the network.
             for token in llm.generate_stream(prompt):
                 yield f"data: {json.dumps({'token': token})}\n\n"
                 await asyncio.sleep(0)
 
-            # 4. Send sources as the final event
-            sources_data = [
-                {
-                    "content": doc.get("text", ""),
-                    "metadata": doc.get("metadata", {}),
-                    "score": 1.0 - doc.get("distance", 1.0),
-                }
-                for doc in retrieved_docs
-            ]
+            # 7. Send sources as the final event
+            sources_data = results_data
             yield f"data: {json.dumps({'sources': sources_data})}\n\n"
             yield "data: [DONE]\n\n"
 

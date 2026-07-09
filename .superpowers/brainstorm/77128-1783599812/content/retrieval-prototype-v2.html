@@ -1,0 +1,535 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #fafafa;
+    color: #1a1a1a;
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .chat {
+    width: 100%;
+    max-width: 700px;
+    background: #ffffff;
+    border-radius: 20px;
+    border: 1px solid #ebebeb;
+    display: flex;
+    flex-direction: column;
+    height: 92vh;
+    overflow: hidden;
+  }
+
+  /* ---- Header ---- */
+  .chat-header {
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .chat-header .brand {
+    width: 28px; height: 28px;
+    background: #18181b;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .chat-header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: #18181b;
+  }
+  .chat-header .badge {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 500;
+    color: #707070;
+    background: #f5f5f5;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  /* ---- Messages ---- */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* User message */
+  .msg-user { display: flex; justify-content: flex-end; }
+  .msg-user .bubble {
+    background: #18181b;
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 16px 16px 4px 16px;
+    max-width: 75%;
+    font-size: 14px;
+    line-height: 1.55;
+    letter-spacing: -0.01em;
+  }
+
+  /* Assistant row */
+  .msg-assistant {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 100%;
+  }
+
+  /* ---- Retrieval card (live) ---- */
+  .retrieval-live {
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fafafa;
+    animation: fadeIn 0.25s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .retrieval-live__head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .retrieval-live__icon {
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .retrieval-live__icon svg { width: 16px; height: 16px; }
+  .retrieval-live__label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #18181b;
+    letter-spacing: -0.01em;
+  }
+  .retrieval-live__meta {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 500;
+    color: #707070;
+    background: #fff;
+    border: 1px solid #ebebeb;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .retrieval-live__list {
+    padding: 6px 16px 10px;
+    display: flex;
+    flex-direction: column;
+  }
+  .retrieval-live__item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 8px 0;
+    border-bottom: 1px solid #f2f2f2;
+  }
+  .retrieval-live__item:last-child { border-bottom: none; padding-bottom: 4px; }
+  .retrieval-live__rank {
+    font-size: 11px;
+    font-weight: 600;
+    color: #18181b;
+    background: #f0f0f0;
+    padding: 2px 7px;
+    border-radius: 5px;
+    flex-shrink: 0;
+    letter-spacing: -0.01em;
+  }
+  .retrieval-live__text {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: #525252;
+    flex: 1;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  /* ---- Generating indicator ---- */
+  .generating {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    background: #fff;
+    border: 1px solid #ebebeb;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #707070;
+    width: fit-content;
+    letter-spacing: -0.01em;
+  }
+  .generating-dots { display: flex; gap: 3px; }
+  .generating-dots span {
+    width: 4px; height: 4px;
+    background: #a0a0a0;
+    border-radius: 50%;
+    animation: genDot 1.4s ease-in-out infinite;
+  }
+  .generating-dots span:nth-child(2) { animation-delay: 0.16s; }
+  .generating-dots span:nth-child(3) { animation-delay: 0.32s; }
+  @keyframes genDot {
+    0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1); }
+  }
+
+  /* ---- Answer bubble ---- */
+  .msg-assistant .bubble {
+    background: #f5f5f5;
+    padding: 14px 18px;
+    border-radius: 16px 16px 16px 4px;
+    max-width: 92%;
+    font-size: 14px;
+    line-height: 1.68;
+    color: #3a3a3a;
+    letter-spacing: -0.01em;
+  }
+  .msg-assistant .bubble p { margin-bottom: 8px; }
+  .msg-assistant .bubble p:last-child { margin-bottom: 0; }
+  .msg-assistant .bubble strong { color: #18181b; font-weight: 600; }
+  .msg-assistant .bubble ul { margin: 6px 0 6px 18px; }
+  .msg-assistant .bubble li { margin-bottom: 4px; }
+
+  /* ---- Collapsed summary (post-answer) ---- */
+  .retrieval-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    background: #fff;
+    border: 1px solid #ebebeb;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #8a8a8a;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: -0.01em;
+    user-select: none;
+  }
+  .retrieval-summary:hover {
+    border-color: #d4d4d4;
+    background: #fafafa;
+  }
+  .retrieval-summary__icon svg { width: 14px; height: 14px; display: block; }
+  .retrieval-summary__arrow {
+    margin-left: auto;
+    transition: transform 0.2s;
+  }
+  .retrieval-summary__arrow svg { width: 14px; height: 14px; display: block; }
+
+  /* ---- Expanded detail ---- */
+  .retrieval-detail {
+    border: 1px solid #ebebeb;
+    border-radius: 10px;
+    background: #fafafa;
+    overflow: hidden;
+  }
+  .retrieval-detail__item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 9px 14px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #525252;
+  }
+  .retrieval-detail__item:last-child { border-bottom: none; }
+  .retrieval-detail__rank {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #18181b;
+    background: #ebebeb;
+    padding: 2px 7px;
+    border-radius: 5px;
+    flex-shrink: 0;
+  }
+
+  /* ---- Input ---- */
+  .input-area {
+    padding: 16px 24px;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    gap: 10px;
+  }
+  .input-area input {
+    flex: 1;
+    padding: 10px 16px;
+    border: 1px solid #ebebeb;
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    background: #fafafa;
+    letter-spacing: -0.01em;
+    transition: all 0.15s;
+  }
+  .input-area input:focus {
+    border-color: #d4d4d4;
+    background: #fff;
+  }
+  .input-area button {
+    padding: 10px 20px;
+    background: #18181b;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    letter-spacing: -0.01em;
+    transition: background 0.15s;
+  }
+  .input-area button:hover { background: #27272a; }
+
+  /* Scrollbar */
+  .messages::-webkit-scrollbar { width: 5px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 10px; }
+</style>
+
+<div class="chat">
+  <!-- Header -->
+  <div class="chat-header">
+    <div class="brand">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 2v4m0 12v4M2 12h4m12 0h4"/>
+      </svg>
+    </div>
+    <h1>RAG 智能问答</h1>
+    <span class="badge">bge-m3 · deepseek-r1</span>
+  </div>
+
+  <!-- Messages -->
+  <div class="messages">
+
+    <!-- ===== Turn 1 ===== -->
+    <div class="msg-user">
+      <div class="bubble">什么是 RAG？它和普通 AI 问答有什么区别？</div>
+    </div>
+
+    <div class="msg-assistant">
+      <!-- 1a. Retrieval live card -->
+      <div class="retrieval-live">
+        <div class="retrieval-live__head">
+          <div class="retrieval-live__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#18181b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="7"/>
+              <path d="m16.5 16.5 4 4"/>
+            </svg>
+          </div>
+          <span class="retrieval-live__label">检索完成</span>
+          <span class="retrieval-live__meta">5 个片段 · 0.3s</span>
+        </div>
+        <div class="retrieval-live__list">
+          <div class="retrieval-live__item">
+            <span class="retrieval-live__rank">1</span>
+            <span class="retrieval-live__text">RAG（Retrieval-Augmented Generation）是一种将信息检索与文本生成相结合的 AI 架构，核心思想是在 LLM 生成回答之前，先从外部知识库中检索相关信息作为上下文参考。</span>
+          </div>
+          <div class="retrieval-live__item">
+            <span class="retrieval-live__rank">2</span>
+            <span class="retrieval-live__text">传统 LLM 问答依赖模型训练时记忆的知识，存在截止日期限制和幻觉风险。RAG 通过实时检索外部文档来解决这些问题。</span>
+          </div>
+          <div class="retrieval-live__item">
+            <span class="retrieval-live__rank">3</span>
+            <span class="retrieval-live__text">RAG 典型工作流程：提问 → Embedding → 向量检索 → 召回 Top-K → 拼接 Prompt → LLM 生成 → 返回结果。</span>
+          </div>
+          <div class="retrieval-live__item">
+            <span class="retrieval-live__rank">4</span>
+            <span class="retrieval-live__text">RAG 优势：知识可实时更新、回答可溯源到文档、大幅减少幻觉、支持私有知识库问答，无需重新训练模型。</span>
+          </div>
+          <div class="retrieval-live__item">
+            <span class="retrieval-live__rank">5</span>
+            <span class="retrieval-live__text">相比传统 FAQ，RAG 不需人工编写问答对，上传文档即可自动完成清洗、分块、向量化、存储和检索全过程。</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1b. Generating -->
+      <div class="generating">
+        正在生成回答
+        <span class="generating-dots"><span></span><span></span><span></span></span>
+      </div>
+
+      <!-- 1c. Answer -->
+      <div class="bubble">
+        <p><strong>RAG</strong>（检索增强生成）是一种结合信息检索和文本生成的 AI 架构。</p>
+        <p><strong>与普通 AI 问答的核心区别：</strong></p>
+        <ul>
+          <li>普通 AI 仅依赖模型记忆的知识，存在知识截止和幻觉问题</li>
+          <li>RAG 先从外部知识库检索相关文档，再基于检索结果生成回答</li>
+        </ul>
+        <p><strong>工作流程：</strong>提问 → 向量检索 → 召回 Top-K → Prompt → 生成</p>
+        <p><strong>优势：</strong>知识实时更新、回答可溯源、减少幻觉、支持私有知识库。</p>
+      </div>
+
+      <!-- 1d. Collapsed summary -->
+      <div class="retrieval-summary" onclick="
+        const detail = this.nextElementSibling;
+        const arrow = this.querySelector('.retrieval-summary__arrow');
+        if (detail.style.display === 'none') {
+          detail.style.display = 'block';
+          arrow.style.transform = 'rotate(180deg)';
+        } else {
+          detail.style.display = 'none';
+          arrow.style.transform = 'rotate(0deg)';
+        }
+      ">
+        <span class="retrieval-summary__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="3"/>
+            <line x1="8" y1="8" x2="16" y2="8"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+            <line x1="8" y1="16" x2="10" y2="16"/>
+          </svg>
+        </span>
+        5 个检索片段
+        <span class="retrieval-summary__arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </span>
+      </div>
+      <div class="retrieval-detail" style="display:none;margin-top:4px;">
+        <div class="retrieval-detail__item">
+          <span class="retrieval-detail__rank">1</span>
+          <span>RAG（Retrieval-Augmented Generation）是一种将信息检索与文本生成相结合的 AI 架构...</span>
+        </div>
+        <div class="retrieval-detail__item">
+          <span class="retrieval-detail__rank">2</span>
+          <span>传统 LLM 问答依赖模型训练时记忆的知识，存在截止日期限制和幻觉风险...</span>
+        </div>
+        <div class="retrieval-detail__item">
+          <span class="retrieval-detail__rank">3</span>
+          <span>RAG 典型工作流程：提问 → Embedding → 向量检索 → 召回 Top-K...</span>
+        </div>
+        <div class="retrieval-detail__item">
+          <span class="retrieval-detail__rank">4</span>
+          <span>RAG 优势：知识可实时更新、回答可溯源到文档、大幅减少幻觉...</span>
+        </div>
+        <div class="retrieval-detail__item">
+          <span class="retrieval-detail__rank">5</span>
+          <span>相比传统 FAQ，RAG 不需人工编写问答对，上传文档即可自动完成...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Turn 2 ===== -->
+    <div class="msg-user">
+      <div class="bubble">RAG 和微调哪个更好？</div>
+    </div>
+
+    <div class="msg-assistant">
+      <div class="retrieval-live">
+        <div class="retrieval-live__head">
+          <div class="retrieval-live__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#18181b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="7"/>
+              <path d="m16.5 16.5 4 4"/>
+            </svg>
+          </div>
+          <span class="retrieval-live__label">检索完成</span>
+          <span class="retrieval-live__meta">3 个片段 · 0.2s</span>
+        </div>
+        <div class="retrieval-live__list">
+          <div class="retrieval-live__item">
+            <span class="retrieval-live__rank">1</span>
+            <span class="retrieval-live__text">RAG 和微调不是互斥的，而是互补的。RAG 适合需实时更新知识的场景，微调适合需改变模型行为或输出风格的场景。建议先尝试 RAG。</span>
+          </div>
+          <div class="retrieval-live__item">
+            <span class="retrieval-live__rank">2</span>
+            <span class="retrieval-live__text">成本对比：RAG 只需 Embedding + 检索算力；微调需要高质量训练数据 + GPU 训练。对大多数企业应用，RAG 是更经济的首选方案。</span>
+          </div>
+          <div class="retrieval-live__item">
+            <span class="retrieval-live__rank">3</span>
+            <span class="retrieval-live__text">决策框架：知识更新频率高 → RAG；需特定输出格式 → 微调；两者都需要 → RAG + 微调组合。按 Prompt → RAG → Few-shot → Fine-tuning 逐级升级。</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="generating">
+        正在生成回答
+        <span class="generating-dots"><span></span><span></span><span></span></span>
+      </div>
+
+      <div class="bubble">
+        <p>RAG 和微调<strong>不是二选一</strong>，而是互补关系：</p>
+        <ul>
+          <li><strong>RAG</strong> — 知识频繁更新，成本低见效快</li>
+          <li><strong>微调</strong> — 改变模型行为或输出格式</li>
+        </ul>
+        <p><strong>选型：</strong>Prompt → RAG → Few-shot → Fine-tuning 逐级升级，大多数场景 RAG 就够。</p>
+      </div>
+
+      <div class="retrieval-summary" onclick="
+        const detail = this.nextElementSibling;
+        const arrow = this.querySelector('.retrieval-summary__arrow');
+        if (detail.style.display === 'none') {
+          detail.style.display = 'block';
+          arrow.style.transform = 'rotate(180deg)';
+        } else {
+          detail.style.display = 'none';
+          arrow.style.transform = 'rotate(0deg)';
+        }
+      ">
+        <span class="retrieval-summary__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="3"/>
+            <line x1="8" y1="8" x2="16" y2="8"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+            <line x1="8" y1="16" x2="10" y2="16"/>
+          </svg>
+        </span>
+        3 个检索片段
+        <span class="retrieval-summary__arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </span>
+      </div>
+      <div class="retrieval-detail" style="display:none;margin-top:4px;">
+        <div class="retrieval-detail__item">
+          <span class="retrieval-detail__rank">1</span>
+          <span>RAG 和微调不是互斥的，而是互补的。RAG 适合需实时更新知识的场景...</span>
+        </div>
+        <div class="retrieval-detail__item">
+          <span class="retrieval-detail__rank">2</span>
+          <span>成本对比：RAG 只需 Embedding + 检索算力；微调需要高质量训练数据...</span>
+        </div>
+        <div class="retrieval-detail__item">
+          <span class="retrieval-detail__rank">3</span>
+          <span>决策框架：知识更新频率高 → RAG；需特定输出格式 → 微调...</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Input -->
+  <div class="input-area">
+    <input type="text" placeholder="输入你的问题..." value="RAG 的向量数据库怎么选？" disabled>
+    <button disabled>发送</button>
+  </div>
+</div>

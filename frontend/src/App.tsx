@@ -1,16 +1,30 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useChat } from './hooks/useChat'
 import ChatWindow from './components/ChatWindow'
 import DocumentUpload from './components/DocumentUpload'
-import type { UploadResponse } from './types'
+import { fetchDocuments } from './api/client'
+import type { DocumentInfo } from './types'
 
 export default function App() {
   const { messages, isLoading, error, sendMessage, clearMessages, setError } = useChat()
-  const [documents, setDocuments] = useState<UploadResponse[]>([])
+  const [documents, setDocuments] = useState<DocumentInfo[]>([])
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  const handleUploadSuccess = useCallback((doc: UploadResponse) => {
-    setDocuments(prev => [doc, ...prev])
+  // Load existing documents on mount
+  useEffect(() => {
+    fetchDocuments()
+      .then(setDocuments)
+      .catch(() => {
+        // Silently fail — the list can be refreshed by uploading a new document
+      })
+  }, [])
+
+  const handleUploadSuccess = useCallback((doc: DocumentInfo) => {
+    setDocuments(prev => {
+      // If this file_id already exists, replace it (re-upload); otherwise prepend
+      const filtered = prev.filter(d => d.file_id !== doc.file_id)
+      return [doc, ...filtered]
+    })
   }, [])
 
   return (

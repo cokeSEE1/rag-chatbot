@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback, type DragEvent } from 'react'
 import { uploadFile } from '../api/client'
-import type { UploadResponse } from '../types'
+import type { DocumentInfo } from '../types'
 
 interface DocumentUploadProps {
-  onUploadSuccess: (doc: UploadResponse) => void
+  onUploadSuccess: (doc: DocumentInfo) => void
 }
 
 const ALLOWED_TYPES = [

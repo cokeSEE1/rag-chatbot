@@ -112,6 +112,17 @@ class VectorStore(ABC):
         """Return the number of documents in the store."""
         ...
 
+    @abstractmethod
+    def list_documents(self) -> list[dict[str, Any]]:
+        """Return unique uploaded documents (grouped by file_id).
+
+        Returns
+        -------
+        list[dict]
+            Each dict has ``file_id``, ``filename``, ``chunks_count``.
+        """
+        ...
+
 
 # ---------------------------------------------------------------------------
 # ChromaDB implementation
@@ -234,6 +245,39 @@ class ChromaVectorStore(VectorStore):
     def get(self, ids: list[str]) -> dict[str, Any]:
         """Retrieve documents by ID (raw Chroma response)."""
         return self._collection.get(ids=ids)  # type: ignore[return-value,no-any-return]
+
+    def list_documents(self) -> list[dict[str, Any]]:
+        """Return unique uploaded documents grouped by file_id.
+
+        Queries all chunks in the collection and groups them by ``file_id``
+        to produce one entry per uploaded document.
+        """
+        try:
+            all_data = self._collection.get()
+        except Exception:
+            logger.exception("Failed to list documents from ChromaDB")
+            return []
+
+        metadatas = all_data.get("metadatas") or []
+        if not metadatas:
+            return []
+
+        # Group chunks by file_id, counting chunks per document
+        doc_map: dict[str, dict[str, Any]] = {}
+        for meta in metadatas:
+            file_id = meta.get("file_id")
+            filename = meta.get("filename", "unknown")
+            if not file_id:
+                continue
+            if file_id not in doc_map:
+                doc_map[file_id] = {
+                    "file_id": file_id,
+                    "filename": filename,
+                    "chunks_count": 0,
+                }
+            doc_map[file_id]["chunks_count"] += 1
+
+        return sorted(doc_map.values(), key=lambda d: d["filename"])
 
     def reset(self) -> None:
         """Delete the collection entirely and recreate it."""

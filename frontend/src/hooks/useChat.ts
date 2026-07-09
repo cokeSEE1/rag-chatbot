@@ -1,15 +1,24 @@
 import { useState, useCallback, useRef } from 'react'
 import type { Message } from '../types'
-import { sendMessage as apiSendMessage } from '../api/client'
+import { sendMessageStream } from '../api/client'
+
+const MAX_HISTORY = 40 // 20 Q&A turns
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const historyRef = useRef<{ role: string; content: string }[]>([])
+  const abortRef = useRef<AbortController | null>(null)
 
   const sendMessage = useCallback(async (query: string) => {
     if (!query.trim()) return
+
+    // Abort any in-flight stream before starting a new one
+    abortRef.current?.abort()
+
+    const controller = new AbortController()
+    abortRef.current = controller
 
     const userMessage: Message = {
       id: crypto.randomUUID(),
@@ -18,45 +27,80 @@ export function useChat() {
       timestamp: Date.now(),
     }
 
+    // Only add the user message — the assistant bubble is created lazily
+    // when the first token arrives so the user sees a typing indicator
+    // during the thinking phase, not an empty bubble.
     setMessages(prev => [...prev, userMessage])
     setIsLoading(true)
     setError(null)
 
+    const assistantId = crypto.randomUUID()
+    let bubbleCreated = false
+
     try {
-      const response = await apiSendMessage({
-        query: query.trim(),
-        history: historyRef.current,
-      })
+      await sendMessageStream(
+        { query: query.trim(), history: historyRef.current },
+        {
+          onToken(_token) {
+            if (!bubbleCreated) {
+              // First token — create the assistant bubble
+              setMessages(prev => [
+                ...prev,
+                {
+                  id: assistantId,
+                  role: 'assistant' as const,
+                  content: _token,
+                  timestamp: Date.now(),
+                },
+              ])
+              bubbleCreated = true
+            } else {
+              setMessages(prev =>
+                prev.map(m =>
+                  m.id === assistantId
+                    ? { ...m, content: m.content + _token }
+                    : m,
+                ),
+              )
+            }
+          },
+          onDone(answer, sources) {
+            setMessages(prev =>
+              prev.map(m =>
+                m.id === assistantId ? { ...m, content: answer, sources } : m,
+              ),
+            )
 
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: response.answer,
-        sources: response.sources,
-        timestamp: Date.now(),
-      }
+            historyRef.current.push(
+              { role: 'user', content: query.trim() },
+              { role: 'assistant', content: answer },
+            )
+            if (historyRef.current.length > MAX_HISTORY) {
+              historyRef.current = historyRef.current.slice(-MAX_HISTORY)
+            }
 
-      // Update conversation history for the backend
-      historyRef.current.push(
-        { role: 'user', content: query.trim() },
-        { role: 'assistant', content: response.answer }
+            setIsLoading(false)
+          },
+          onError(err) {
+            setMessages(prev => prev.filter(m => m.id !== assistantId))
+            setError(err.message)
+            setIsLoading(false)
+          },
+        },
+        controller.signal,
       )
-
-      // Keep only the last 20 turns to avoid context overflow
-      if (historyRef.current.length > 40) {
-        historyRef.current = historyRef.current.slice(-40)
-      }
-
-      setMessages(prev => [...prev, assistantMessage])
     } catch (err) {
+      if (bubbleCreated) {
+        setMessages(prev => prev.filter(m => m.id !== assistantId))
+      }
       const message = err instanceof Error ? err.message : '发送消息失败，请重试'
       setError(message)
-    } finally {
       setIsLoading(false)
     }
   }, [])
 
   const clearMessages = useCallback(() => {
+    abortRef.current?.abort()
     setMessages([])
     historyRef.current = []
     setError(null)

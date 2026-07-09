@@ -33,7 +33,10 @@ export default function ChatWindow({ messages, isLoading, onSend }: ChatWindowPr
           ))
         )}
 
-        {isLoading && (
+        {/* Only show typing indicator while waiting for the first token.
+             Once the assistant starts responding, the streaming bubble itself
+             provides the "in progress" visual. */}
+        {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
           <div className="message-row message-row--assistant">
             <div className="message-bubble message-bubble--assistant">
               <div className="typing-indicator">
