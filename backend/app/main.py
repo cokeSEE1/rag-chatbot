@@ -102,10 +102,13 @@ app.include_router(upload_router)
 # ---------------------------------------------------------------------------
 # Static files (production — serve built frontend assets)
 # ---------------------------------------------------------------------------
-frontend_dist = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")
-if os.path.isdir(frontend_dist):
-    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="static")
-    logger.info("Mounted frontend static files from %s", frontend_dist)
+# Only enable in production: set ENABLE_STATIC=true
+# In dev, the Vite dev server on :5173 handles the frontend.
+if os.environ.get("ENABLE_STATIC", "").lower() == "true":
+    frontend_dist = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")
+    if os.path.isdir(frontend_dist):
+        app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="static")
+        logger.info("Mounted frontend static files from %s", frontend_dist)
 
 
 # ---------------------------------------------------------------------------

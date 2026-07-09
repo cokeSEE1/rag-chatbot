@@ -171,11 +171,15 @@ class OllamaProvider(LLMProvider):
                 return content
 
             except (requests.RequestException, ValueError, KeyError) as exc:
+                resp_body = ""
+                if isinstance(exc, requests.HTTPError) and exc.response is not None:
+                    resp_body = exc.response.text[:500]
                 logger.warning(
-                    "Ollama generate attempt %d/%d failed: %s",
+                    "Ollama generate attempt %d/%d failed: %s response=%s",
                     attempt + 1,
                     self.max_retries,
                     exc,
+                    resp_body,
                 )
                 if attempt < self.max_retries - 1:
                     time.sleep(self.retry_delay * (2 ** attempt))

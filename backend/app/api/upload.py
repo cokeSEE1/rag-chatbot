@@ -149,7 +149,8 @@ async def upload_document(
         raise HTTPException(status_code=400, detail=f"Cannot read file: {exc}")
 
     # --- Clean -------------------------------------------------------------------
-    cleaned_text = cleaning_pipeline.clean(raw_text)
+    cleaned_result = cleaning_pipeline.clean(raw_text)
+    cleaned_text = cleaned_result["text"] if isinstance(cleaned_result, dict) else cleaned_result
 
     # --- Chunk -------------------------------------------------------------------
     chunks = _chunk_text(cleaned_text)
@@ -168,10 +169,7 @@ async def upload_document(
         }
         for idx in range(len(chunks))
     ]
-    # The vector store's add() is expected to handle embedding internally
-    # or accept pre-computed embeddings. We embed first then store.
-    embeddings = embedding_provider.embed(chunks)
-    vector_store.add(embeddings=embeddings, documents=chunks, metadatas=metadatas)
+    vector_store.add(texts=chunks, metadatas=metadatas)
 
     logger.info(
         "Ingested '%s' → %d chunks (file_id=%s)",

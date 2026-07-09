@@ -13,54 +13,11 @@ from fastapi.responses import StreamingResponse
 
 from app.api.dependencies import get_llm_provider, get_retriever
 from app.models.schemas import ChatRequest, ChatResponse, SourceDoc
+from app.pipeline.generation import build_rag_prompt
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api")
-
-
-def build_rag_prompt(
-    query: str,
-    context: str,
-    history: list[dict[str, str]] | None = None,
-) -> str:
-    """Construct a RAG prompt from the query, retrieved context, and history.
-
-    Parameters
-    ----------
-    query : str
-        Current user question.
-    context : str
-        Concatenated document chunks deemed relevant by the retriever.
-    history : list[dict[str, str]] | None
-        Previous conversation turns as ``[{"role": "user|assistant", "content": ...}]``.
-
-    Returns
-    -------
-    str
-        A formatted prompt string ready to be sent to the LLM.
-    """
-    if not history:
-        history_text = ""
-    else:
-        lines: list[str] = []
-        for turn in history:
-            role = turn.get("role", "unknown")
-            content = turn.get("content", "")
-            lines.append(f"{role}: {content}")
-        history_text = "\n".join(lines)
-
-    prompt = f"""你是一个知识库问答助手。请根据以下参考资料回答用户的问题。
-
-{history_text}
-
-参考资料：
-{context}
-
-用户问题：{query}
-
-请基于以上参考资料提供准确、有帮助的回答。如果参考资料中找不到相关信息，请如实说明。"""
-    return prompt
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -78,12 +35,13 @@ async def chat(
         context_parts: list[str] = []
         sources: list[SourceDoc] = []
         for doc in retrieved_docs:
-            context_parts.append(doc.get("content", ""))
+            text = doc.get("text", "")
+            context_parts.append(text)
             sources.append(
                 SourceDoc(
-                    content=doc.get("content", ""),
+                    content=text,
                     metadata=doc.get("metadata", {}),
-                    score=doc.get("score", 0.0),
+                    score=1.0 - doc.get("distance", 1.0),
                 )
             )
 
@@ -121,7 +79,7 @@ async def chat_stream(
 
             context_parts: list[str] = []
             for doc in retrieved_docs:
-                context_parts.append(doc.get("content", ""))
+                context_parts.append(doc.get("text", ""))
 
             context = (
                 "\n\n---\n\n".join(context_parts)
@@ -132,16 +90,16 @@ async def chat_stream(
             # 2. Build prompt
             prompt = build_rag_prompt(request.query, context, request.history)
 
-            # 3. Stream tokens
-            async for token in llm.generate_stream(prompt):
+            # 3. Stream tokens (sync generator wrapped in async)
+            for token in llm.generate_stream(prompt):
                 yield f"data: {json.dumps({'token': token})}\n\n"
 
             # 4. Send sources as the final event
             sources_data = [
                 {
-                    "content": doc.get("content", ""),
+                    "content": doc.get("text", ""),
                     "metadata": doc.get("metadata", {}),
-                    "score": doc.get("score", 0.0),
+                    "score": 1.0 - doc.get("distance", 1.0),
                 }
                 for doc in retrieved_docs
             ]
