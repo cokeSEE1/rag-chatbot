@@ -15,16 +15,6 @@ class SourceDoc(BaseModel):
     score: float = Field(..., description="Relevance / similarity score")
 
 
-class RetrievalResult(BaseModel):
-    """A single result returned by the retrieval step."""
-
-    content: str = Field(..., description="Retrieved chunk text")
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Additional metadata (filename, etc.)"
-    )
-    score: float = Field(..., description="Relevance / similarity score (0-1)")
-
-
 class ChatRequest(BaseModel):
     """Incoming chat request from the frontend."""
 
