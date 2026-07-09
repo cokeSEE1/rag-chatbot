@@ -167,8 +167,8 @@ class OllamaProvider(LLMProvider):
                 )
                 resp.raise_for_status()
                 data = resp.json()
-                content = data.get("message", {}).get("content", "")
-                return content
+                content: str = data.get("message", {}).get("content", "")
+                return content.lstrip()
 
             except (requests.RequestException, ValueError, KeyError) as exc:
                 resp_body = ""
@@ -206,6 +206,8 @@ class OllamaProvider(LLMProvider):
                 )
                 resp.raise_for_status()
 
+                stripped_prefix = False
+
                 for line in resp.iter_lines(decode_unicode=True):
                     if not line:
                         continue
@@ -215,7 +217,14 @@ class OllamaProvider(LLMProvider):
                         logger.debug("Skipping unparseable stream line: %s", line[:80])
                         continue
 
-                    token = chunk.get("message", {}).get("content", "")
+                    token: str = chunk.get("message", {}).get("content", "")
+
+                    # Strip deepseek-r1 thinking-phase leading whitespace
+                    if token and not stripped_prefix:
+                        token = token.lstrip()
+                        if token:
+                            stripped_prefix = True
+
                     if token:
                         yield token
 
@@ -259,3 +268,199 @@ class OllamaProvider(LLMProvider):
 
     def __repr__(self) -> str:
         return f"OllamaProvider(model={self.model!r})"
+
+
+# ---------------------------------------------------------------------------
+# Anthropic (Messages API) implementation
+# ---------------------------------------------------------------------------
+
+class AnthropicProvider(LLMProvider):
+    """LLM provider using the Anthropic Messages API.
+
+    Compatible with Anthropic and third-party proxies that implement the
+    same wire protocol (e.g. packyapi, openrouter).
+
+    Parameters
+    ----------
+    base_url : str
+        API base URL.
+    api_key : str
+        API key for authentication (sent as ``x-api-key`` header).
+    model : str
+        Model name, e.g. ``"deepseek-v4-flash"``.
+    max_tokens : int
+        Maximum tokens in the generated response.
+    max_retries : int
+        Retry count on transient failures.
+    retry_delay : float
+        Base delay in seconds for exponential backoff.
+    timeout : float
+        Request timeout in seconds.
+    temperature : float
+        Sampling temperature (0–2).
+    """
+
+    def __init__(
+        self,
+        base_url: str = "https://api.anthropic.com",
+        api_key: str = "",
+        model: str = "claude-sonnet-5",
+        max_tokens: int = 2048,
+        max_retries: int = 3,
+        retry_delay: float = 1.0,
+        timeout: float = 120.0,
+        temperature: float = 0.7,
+    ) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.api_key = api_key
+        self.model = model
+        self.max_tokens = max_tokens
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
+        self.timeout = timeout
+        self.temperature = temperature
+        self._session = requests.Session()
+        self._session.headers.update({
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+        })
+
+    # -- public API ---------------------------------------------------------
+
+    def generate(self, messages: list[dict[str, str]]) -> str:
+        url = f"{self.base_url}/v1/messages"
+
+        # Anthropic Messages API requires system prompt as top-level param
+        system_msg: str | None = None
+        chat_messages: list[dict[str, Any]] = []
+        for m in messages:
+            if m["role"] == "system":
+                system_msg = m["content"]
+            else:
+                chat_messages.append({"role": m["role"], "content": m["content"]})
+
+        payload: dict[str, Any] = {
+            "model": self.model,
+            "max_tokens": self.max_tokens,
+            "messages": chat_messages,
+            "temperature": self.temperature,
+        }
+        if system_msg:
+            payload["system"] = system_msg
+
+        for attempt in range(self.max_retries):
+            try:
+                resp = self._session.post(
+                    url,
+                    json=payload,
+                    timeout=self.timeout,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+
+                # Extract text blocks (skip thinking blocks)
+                content_blocks: list[dict[str, Any]] = data.get("content", [])
+                text_parts = [
+                    b["text"]
+                    for b in content_blocks
+                    if b.get("type") == "text" and "text" in b
+                ]
+                return "".join(text_parts).lstrip()
+
+            except (requests.RequestException, ValueError, KeyError) as exc:
+                resp_body = ""
+                if isinstance(exc, requests.HTTPError) and exc.response is not None:
+                    resp_body = exc.response.text[:500]
+                logger.warning(
+                    "Anthropic generate attempt %d/%d failed: %s response=%s",
+                    attempt + 1,
+                    self.max_retries,
+                    exc,
+                    resp_body,
+                )
+                if attempt < self.max_retries - 1:
+                    time.sleep(self.retry_delay * (2 ** attempt))
+                else:
+                    raise RuntimeError(
+                        f"Anthropic generate failed after {self.max_retries} attempts"
+                    ) from exc
+
+        raise RuntimeError("Unexpected: generate retry loop exhausted")
+
+    def generate_stream(self, messages: list[dict[str, str]]) -> Iterator[str]:
+        url = f"{self.base_url}/v1/messages"
+
+        system_msg: str | None = None
+        chat_messages: list[dict[str, Any]] = []
+        for m in messages:
+            if m["role"] == "system":
+                system_msg = m["content"]
+            else:
+                chat_messages.append({"role": m["role"], "content": m["content"]})
+
+        payload: dict[str, Any] = {
+            "model": self.model,
+            "max_tokens": self.max_tokens,
+            "messages": chat_messages,
+            "temperature": self.temperature,
+            "stream": True,
+        }
+        if system_msg:
+            payload["system"] = system_msg
+
+        last_exc: Exception | None = None
+
+        for attempt in range(self.max_retries):
+            try:
+                resp = self._session.post(
+                    url,
+                    json=payload,
+                    timeout=self.timeout,
+                    stream=True,
+                )
+                resp.raise_for_status()
+
+                for line in resp.iter_lines(decode_unicode=True):
+                    if not line:
+                        continue
+                    # Anthropic SSE: "data: {...}" or "event: ..."
+                    if not line.startswith("data: "):
+                        continue
+                    data_str = line[6:]  # strip "data: " prefix
+                    if data_str == "[DONE]":
+                        return
+
+                    try:
+                        chunk = json.loads(data_str)
+                    except json.JSONDecodeError:
+                        continue
+
+                    event_type = chunk.get("type", "")
+                    if event_type == "content_block_delta":
+                        delta = chunk.get("delta", {})
+                        if delta.get("type") == "text_delta":
+                            token = delta.get("text", "")
+                            if token:
+                                yield token
+                    elif event_type == "message_stop":
+                        return
+
+                return  # stream ended gracefully
+
+            except (requests.RequestException, ValueError) as exc:
+                last_exc = exc
+                logger.warning(
+                    "Anthropic stream attempt %d/%d failed: %s",
+                    attempt + 1,
+                    self.max_retries,
+                    exc,
+                )
+                if attempt < self.max_retries - 1:
+                    time.sleep(self.retry_delay * (2 ** attempt))
+
+        raise RuntimeError(
+            f"Anthropic stream failed after {self.max_retries} attempts"
+        ) from last_exc
+
+    def __repr__(self) -> str:
+        return f"AnthropicProvider(model={self.model!r})"

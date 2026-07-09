@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 # Load .env from the backend root directory
 _env_path = Path(__file__).resolve().parent.parent / ".env"
-load_dotenv(_env_path)
+load_dotenv(_env_path, override=True)
 
 
 class Settings:
@@ -21,7 +21,15 @@ class Settings:
             "OLLAMA_BASE_URL", "http://localhost:11434"
         )
         self.embedding_model: str = os.environ.get("EMBEDDING_MODEL", "bge-m3")
+        self.llm_provider: str = os.environ.get("LLM_PROVIDER", "ollama")
         self.llm_model: str = os.environ.get("LLM_MODEL", "qwen2.5:7b")
+        self.anthropic_base_url: str = os.environ.get(
+            "ANTHROPIC_BASE_URL", "https://api.anthropic.com"
+        )
+        self.anthropic_api_key: str = os.environ.get("ANTHROPIC_API_KEY", "")
+        self.anthropic_model: str = os.environ.get(
+            "ANTHROPIC_MODEL", "claude-sonnet-5"
+        )
         self.chroma_data_dir: str = os.environ.get(
             "CHROMA_DATA_DIR", "./data/chroma"
         )

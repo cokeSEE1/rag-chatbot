@@ -79,10 +79,23 @@ def get_retriever():
 
 @lru_cache()
 def get_llm_provider():
-    """Return a singleton OllamaProvider instance."""
-    from app.pipeline.generation import OllamaProvider
+    """Return a singleton LLM provider (Ollama or Anthropic, based on config)."""
+    from app.pipeline.generation import AnthropicProvider, OllamaProvider
 
     settings = get_settings()
+
+    if settings.llm_provider == "anthropic":
+        logger.info(
+            "Initialising AnthropicProvider base_url=%s model=%s",
+            settings.anthropic_base_url,
+            settings.anthropic_model,
+        )
+        return AnthropicProvider(
+            base_url=settings.anthropic_base_url,
+            api_key=settings.anthropic_api_key,
+            model=settings.anthropic_model,
+        )
+
     logger.info("Initialising OllamaProvider model=%s", settings.llm_model)
     return OllamaProvider(
         base_url=settings.ollama_base_url,

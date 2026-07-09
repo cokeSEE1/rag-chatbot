@@ -31,6 +31,7 @@ from .retrieval import (
 
 from .generation import (
     LLMProvider,
+    AnthropicProvider,
     OllamaProvider,
     build_rag_prompt,
 )
@@ -54,6 +55,7 @@ __all__ = [
     "Retriever",
     # generation
     "LLMProvider",
+    "AnthropicProvider",
     "OllamaProvider",
     "build_rag_prompt",
 ]
