@@ -3,6 +3,7 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   sources?: SourceDoc[];
+  retrieval?: RetrievalInfo;
   timestamp: number;
 }
 
@@ -10,6 +11,18 @@ export interface SourceDoc {
   content: string;
   metadata: Record<string, any>;
   score: number;
+}
+
+export interface RetrievalResult {
+  content: string;
+  metadata: Record<string, any>;
+  score: number;
+}
+
+export interface RetrievalInfo {
+  count: number;
+  latencyMs: number;
+  results: RetrievalResult[];
 }
 
 export interface ChatRequest {
