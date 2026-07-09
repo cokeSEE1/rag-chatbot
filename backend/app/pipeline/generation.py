@@ -420,9 +420,13 @@ class AnthropicProvider(LLMProvider):
                 )
                 resp.raise_for_status()
 
-                for line in resp.iter_lines(decode_unicode=True):
-                    if not line:
+                # Force UTF-8 decoding — some proxies (e.g. packyapi) omit
+                # charset from the Content-Type header, causing requests to
+                # fall back to ISO-8859-1 which mangles multi-byte Unicode.
+                for line_bytes in resp.iter_lines(decode_unicode=False):
+                    if not line_bytes:
                         continue
+                    line = line_bytes.decode("utf-8")
                     # Anthropic SSE: "data: {...}" or "event: ..."
                     if not line.startswith("data: "):
                         continue
