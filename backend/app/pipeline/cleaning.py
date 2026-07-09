@@ -1,9 +1,11 @@
 """
 Data Cleaning Module.
 
-Implements a chain-of-responsibility pipeline for text cleaning with four levels:
+Implements a chain-of-responsibility pipeline for text cleaning with five levels:
     Level 1 - Basic: Unicode normalization, line endings, whitespace compression
     Level 2 - Structure: Remove HTML tags, Markdown link/image syntax
+    Level 2.5 - DOCX metadata: Strip revision history, version headers, prototype
+        disclaimers from enterprise .docx documents
     Level 3 - Quality: Length checks, whitespace ratio checks
     Level 4 - RAG-specific: Paragraph chunking, short paragraph merging
 
@@ -11,6 +13,7 @@ Usage:
     pipeline = CleaningPipeline()
     pipeline.add_step(BasicCleaningStep())
     pipeline.add_step(StructureCleaningStep())
+    pipeline.add_step(DocxMetadataCleaningStep())
     pipeline.add_step(QualityFilterStep(min_length=10, max_whitespace_ratio=0.8))
     pipeline.add_step(RAGChunkingStep(min_chunk_length=50, merge_short=True))
     result = pipeline.clean(text)
@@ -218,6 +221,73 @@ class RAGChunkingStep(CleaningStep):
                 merged.append(buffer)
 
         return "\n\n".join(merged)
+
+
+# ---------------------------------------------------------------------------
+# Level 2.5 — DOCX metadata stripping
+# ---------------------------------------------------------------------------
+
+class DocxMetadataCleaningStep(CleaningStep):
+    """Remove common Chinese document metadata patterns from extracted text.
+
+    Targets patterns frequently found in enterprise .docx documents:
+    document revision history tables, version headers, prototype disclaimers,
+    and other boilerplate that wastes retrieval slots.
+    """
+
+    # Patterns that indicate a line is document metadata (not content)
+    _METADATA_PATTERNS: list[re.Pattern[str]] = [
+        # "需求分析说明书 第2.0版" / "需求规格说明书 第1.0版"
+        re.compile(
+            r"^(需求(?:分析|规格)说明书)\s*第?\d+(?:\.\d+)?版\s*\d{4}年\d+月\s*$"
+        ),
+        # "文档修订记录 *修订状态:C——创建,A——增加,M——修改,D——删除"
+        re.compile(r"^文档修订记录\s*\*修订状态:"),
+        # "*修订状态:...*" standalone
+        re.compile(r"^\*修订状态:.*\*$"),
+        # "(备注:此文档中的图片示例均为原型示意图...)" or "(备注:图片为原型示意图)"
+        re.compile(r"^\(备注:.*原型示意图"),
+        # Generic version + date header "第X.X版 YYYY年MM月"
+        re.compile(r"^第\d+(?:\.\d+)?版\s*\d{4}年\d+月\s*$"),
+    ]
+
+    @property
+    def name(self) -> str:
+        return "docx_metadata"
+
+    def clean(self, text: str) -> str:
+        if not text:
+            return ""
+
+        lines = text.split("\n")
+        kept: list[str] = []
+
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                # Preserve blank lines as paragraph separators
+                # but don't accumulate consecutive blank lines
+                if kept and kept[-1] != "":
+                    kept.append("")
+                continue
+
+            # Check against all metadata patterns
+            if any(pat.search(stripped) for pat in self._METADATA_PATTERNS):
+                logger.debug(
+                    "DocxMetadata: stripping metadata line: %s",
+                    stripped[:80],
+                )
+                continue
+
+            kept.append(line)
+
+        # Strip leading/trailing blank lines
+        while kept and kept[0] == "":
+            kept.pop(0)
+        while kept and kept[-1] == "":
+            kept.pop(-1)
+
+        return "\n".join(kept)
 
 
 # ---------------------------------------------------------------------------

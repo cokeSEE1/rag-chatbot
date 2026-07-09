@@ -37,7 +37,12 @@ def _read_text(file_path: Path) -> str:
     return file_path.read_text(encoding="utf-8")
 
 
-def _chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]:
+def _chunk_text(
+    text: str,
+    chunk_size: int = 500,
+    overlap: int = 50,
+    context_prefix: str | None = None,
+) -> list[str]:
     """Split *cleaned* text into overlapping paragraph-oriented chunks.
 
     A simple paragraph-based chunker: splits on double-newline first, then
@@ -49,9 +54,13 @@ def _chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str
     text : str
         Cleaned text to chunk.
     chunk_size : int
-        Target maximum chunk size in characters.
+        Target maximum chunk size in characters (for body text, excluding prefix).
     overlap : int
         Number of characters to overlap between consecutive chunks.
+    context_prefix : str or None
+        Optional prefix prepended to every chunk (e.g. "[文档: filename]").
+        The prefix is NOT counted against chunk_size so body content length is
+        preserved.  This ensures the embedding captures document association.
 
     Returns
     -------
@@ -85,12 +94,25 @@ def _chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str
     if current:
         chunks.append("\n\n".join(current))
 
+    # Inject context prefix into every chunk (after chunking so prefix
+    # doesn't affect chunk size calculation)
+    if context_prefix:
+        chunks = [f"{context_prefix}\n{chunk}" for chunk in chunks]
+
     return chunks
 
 
 # ---------------------------------------------------------------------------
-# Route
+# Routes
 # ---------------------------------------------------------------------------
+@router.get("/documents")
+async def list_documents(
+    vector_store=Depends(get_vector_store),
+) -> list[dict]:
+    """Return all uploaded documents (grouped by file_id)."""
+    return vector_store.list_documents()
+
+
 @router.post("/upload", response_model=UploadResponse)
 async def upload_document(
     file: UploadFile = File(...),
@@ -153,7 +175,10 @@ async def upload_document(
     cleaned_text = cleaned_result["text"] if isinstance(cleaned_result, dict) else cleaned_result
 
     # --- Chunk -------------------------------------------------------------------
-    chunks = _chunk_text(cleaned_text)
+    # Inject document filename as context prefix so every chunk's embedding
+    # captures the document association — critical for retrieval quality.
+    context_prefix = f"[文档: {file.filename}]"
+    chunks = _chunk_text(cleaned_text, context_prefix=context_prefix)
 
     if not chunks:
         raise HTTPException(
@@ -203,14 +228,33 @@ def _extract_pdf_text(_file_path: Path) -> str:
     )
 
 
-def _extract_docx_text(_file_path: Path) -> str:
-    """Extract text from a DOCX file.
+def _extract_docx_text(file_path: Path) -> str:
+    """Extract text from a DOCX file using python-docx.
 
-    NOTE: This is a stub. The cleaning pipeline should provide a proper
-    DOCX reader once it is implemented. For now, we raise so the caller
-    gets a clear message.
+    Iterates over all paragraphs in the document body. Headers, footers,
+    tables, and text boxes are intentionally skipped for now — they can be
+    added as the pipeline matures.
+
+    Parameters
+    ----------
+    file_path : Path
+        Path to the .docx file.
+
+    Returns
+    -------
+    str
+        Extracted text with paragraphs separated by double newlines.
     """
-    raise NotImplementedError(
-        "DOCX text extraction is not yet implemented. "
-        "Please add it to the cleaning pipeline."
-    )
+    try:
+        from docx import Document
+    except ImportError:
+        raise ImportError(
+            "python-docx is required to process .docx files. "
+            "Install it with: pip install python-docx"
+        )
+
+    doc = Document(str(file_path))
+    paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+    if not paragraphs:
+        raise ValueError("No text found in the document.")
+    return "\n\n".join(paragraphs)

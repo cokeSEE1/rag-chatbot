@@ -25,6 +25,7 @@ def get_cleaning_pipeline():
     from app.pipeline.cleaning import (
         BasicCleaningStep,
         CleaningPipeline,
+        DocxMetadataCleaningStep,
         QualityFilterStep,
         RAGChunkingStep,
         StructureCleaningStep,
@@ -34,6 +35,7 @@ def get_cleaning_pipeline():
     pipeline = CleaningPipeline()
     pipeline.add_step(BasicCleaningStep())
     pipeline.add_step(StructureCleaningStep())
+    pipeline.add_step(DocxMetadataCleaningStep())
     pipeline.add_step(QualityFilterStep())
     pipeline.add_step(RAGChunkingStep())
     return pipeline
