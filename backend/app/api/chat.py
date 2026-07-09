@@ -4,8 +4,10 @@ Chat API — RAG query endpoint with optional SSE streaming.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+import time
 from typing import AsyncGenerator
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -74,9 +76,28 @@ async def chat_stream(
 
     async def event_generator() -> AsyncGenerator[str, None]:
         try:
-            # 1. Retrieve
-            retrieved_docs = retriever.retrieve(request.query)
+            # 1. Signal retrieval start
+            yield f"data: {json.dumps({'type': 'retrieval_start'})}\n\n"
+            await asyncio.sleep(0)
 
+            # 2. Retrieve with timing
+            t0 = time.perf_counter()
+            retrieved_docs = retriever.retrieve(request.query)
+            latency_ms = round((time.perf_counter() - t0) * 1000)
+
+            # 3. Signal retrieval done with results
+            results_data = [
+                {
+                    "content": doc.get("text", ""),
+                    "metadata": doc.get("metadata", {}),
+                    "score": 1.0 - doc.get("distance", 1.0),
+                }
+                for doc in retrieved_docs
+            ]
+            yield f"data: {json.dumps({'type': 'retrieval_done', 'count': len(retrieved_docs), 'latency_ms': latency_ms, 'results': results_data})}\n\n"
+            await asyncio.sleep(0)
+
+            # 4. Build context for the LLM
             context_parts: list[str] = []
             for doc in retrieved_docs:
                 context_parts.append(doc.get("text", ""))
@@ -90,9 +111,11 @@ async def chat_stream(
             # 2. Build prompt
             prompt = build_rag_prompt(request.query, context, request.history)
 
-            # 3. Stream tokens (sync generator wrapped in async)
+            # 3. Stream tokens — yield to event loop after each so the
+            # ASGI server flushes every SSE event to the network.
             for token in llm.generate_stream(prompt):
                 yield f"data: {json.dumps({'token': token})}\n\n"
+                await asyncio.sleep(0)
 
             # 4. Send sources as the final event
             sources_data = [
