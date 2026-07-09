@@ -1,4 +1,4 @@
-import type { ChatRequest, ChatResponse, DocumentInfo, SourceDoc, UploadResponse } from '../types'
+import type { ChatRequest, ChatResponse, DocumentInfo, RetrievalResult, SourceDoc, UploadResponse } from '../types'
 
 const API_BASE = '/api'
 
@@ -21,6 +21,10 @@ async function sendMessage(request: ChatRequest): Promise<ChatResponse> {
 
 /** Callbacks for streaming RAG chat. */
 interface StreamCallbacks {
+  /** Retrieval phase has started. */
+  onRetrievalStart?: () => void
+  /** Retrieval phase completed with results. */
+  onRetrievalDone?: (data: { count: number; latency_ms: number; results: RetrievalResult[] }) => void
   /** A new token has arrived. */
   onToken: (token: string) => void
   /** Stream completed with accumulated answer and sources. */
@@ -86,7 +90,15 @@ async function sendMessageStream(
 
         try {
           const parsed = JSON.parse(data)
-          if (parsed.token) {
+          if (parsed.type === 'retrieval_start') {
+            callbacks.onRetrievalStart?.()
+          } else if (parsed.type === 'retrieval_done') {
+            callbacks.onRetrievalDone?.({
+              count: parsed.count,
+              latency_ms: parsed.latency_ms,
+              results: parsed.results,
+            })
+          } else if (parsed.token) {
             fullAnswer += parsed.token
             callbacks.onToken(parsed.token)
           } else if (parsed.sources) {
