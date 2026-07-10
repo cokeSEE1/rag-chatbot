@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import type { Message } from '../types'
 import MessageBubble from './MessageBubble'
 import ChatInput from './ChatInput'
@@ -8,9 +8,10 @@ interface ChatWindowProps {
   messages: Message[]
   isLoading: boolean
   onSend: (message: string) => void
+  headerRight?: ReactNode
 }
 
-export default function ChatWindow({ messages, isLoading, onSend }: ChatWindowProps) {
+export default function ChatWindow({ messages, isLoading, onSend, headerRight }: ChatWindowProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll to bottom when messages change or loading state changes
@@ -22,6 +23,7 @@ export default function ChatWindow({ messages, isLoading, onSend }: ChatWindowPr
     <div className="chat-window">
       <div className="chat-window__header">
         <h2>RAG 智能问答</h2>
+        {headerRight && <div className="chat-window__header-right">{headerRight}</div>}
       </div>
 
       <div className="chat-window__messages">

@@ -1,0 +1,230 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #fafafa; -webkit-font-smoothing: antialiased;
+    padding: 40px;
+  }
+  h2 { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; color: #18181b; }
+  .subtitle { font-size: 13px; color: #999; margin: 4px 0 32px; }
+
+  .options { display: flex; flex-direction: column; gap: 24px; max-width: 720px; }
+
+  .card {
+    background: #fff; border: 1px solid #ebebeb; border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .card:hover { border-color: #18181b; }
+  .card.selected { border-color: #18181b; box-shadow: 0 0 0 1px #18181b; }
+
+  .card__header {
+    padding: 16px 20px; border-bottom: 1px solid #f0f0f0;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card__letter {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: #18181b; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+  .card__title { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+  .card__desc { font-size: 11.5px; color: #999; margin-left: auto; }
+
+  .card__preview { padding: 20px; }
+
+  /* ===== Shared: Chat header mock ===== */
+  .mock-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px;
+    border: 1px solid #ebebeb; border-radius: 10px;
+    background: #fff;
+  }
+  .mock-header h3 {
+    font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+  }
+
+  /* ===== Variant A: Segmented pill toggle ===== */
+  .switcher-a {
+    display: flex; margin-left: auto;
+    background: #f5f5f5; border-radius: 10px; padding: 3px;
+    gap: 2px;
+  }
+  .switcher-a__btn {
+    padding: 6px 14px; border-radius: 8px; border: none;
+    font-size: 12px; font-weight: 500; font-family: inherit;
+    cursor: pointer; color: #8a8a8a; background: transparent;
+    transition: all 0.15s; letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+  .switcher-a__btn.active {
+    background: #fff; color: #18181b;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+  .switcher-a__btn:hover:not(.active) { color: #525252; }
+  .switcher-a__divider {
+    width: 1px; background: #e0e0e0; margin: 4px 2px;
+  }
+
+  /* ===== Variant B: Custom dropdown ===== */
+  .switcher-b {
+    margin-left: auto; position: relative;
+  }
+  .switcher-b__trigger {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 12px;
+    border: 1px solid #ebebeb; border-radius: 8px;
+    background: #fff; cursor: pointer;
+    font-size: 12px; font-weight: 500; font-family: inherit;
+    color: #18181b; letter-spacing: -0.01em;
+    transition: all 0.15s;
+  }
+  .switcher-b__trigger:hover { border-color: #d4d4d4; }
+  .switcher-b__dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .switcher-b__dot--local { background: #22c55e; }
+  .switcher-b__dot--remote { background: #3b82f6; }
+  .switcher-b__chevron { color: #bbb; font-size: 10px; margin-left: 4px; }
+  .switcher-b__menu {
+    position: absolute; top: calc(100% + 6px); right: 0;
+    background: #fff; border: 1px solid #ebebeb; border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    min-width: 200px; padding: 4px; z-index: 10;
+  }
+  .switcher-b__group-label {
+    font-size: 10px; font-weight: 600; color: #bbb;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 8px 10px 4px;
+  }
+  .switcher-b__option {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: 6px;
+    font-size: 12px; color: #525252; cursor: pointer;
+    transition: background 0.1s;
+  }
+  .switcher-b__option:hover { background: #f5f5f5; }
+  .switcher-b__option.selected { background: #f5f5f5; color: #18181b; font-weight: 500; }
+  .switcher-b__option .check {
+    margin-left: auto; font-size: 12px; color: #18181b;
+  }
+
+  /* ===== Variant C: Minimal select-like ===== */
+  .switcher-c {
+    margin-left: auto; display: flex; align-items: center; gap: 8px;
+  }
+  .switcher-c__label {
+    font-size: 10.5px; color: #bbb; text-transform: uppercase;
+    letter-spacing: 0.05em; font-weight: 600;
+  }
+  .switcher-c__select {
+    padding: 6px 28px 6px 10px;
+    border: 1px solid #ebebeb; border-radius: 7px;
+    font-size: 12px; font-family: inherit; font-weight: 500;
+    color: #18181b; background: #fff;
+    cursor: pointer; outline: none;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%23999' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+    transition: border-color 0.15s;
+  }
+  .switcher-c__select:hover { border-color: #d4d4d4; }
+  .switcher-c__select:focus { border-color: #18181b; }
+</style>
+
+<h2>模型切换器 — 设计方案</h2>
+<p class="subtitle">在当前黑白灰极简风格下的三种设计方向，点击卡片选中</p>
+
+<div class="options">
+  <!-- A: Segmented pill -->
+  <div class="card" onclick="document.querySelectorAll('.card').forEach(c=>c.classList.remove('selected'));this.classList.add('selected')">
+    <div class="card__header">
+      <span class="card__letter">A</span>
+      <span class="card__title">分段切换器</span>
+      <span class="card__desc">Segmented Control</span>
+    </div>
+    <div class="card__preview">
+      <div class="mock-header">
+        <h3>智能问答</h3>
+        <div class="switcher-a">
+          <button class="switcher-a__btn active">
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#22c55e;margin-right:4px;"></span>
+            本地
+          </button>
+          <span class="switcher-a__divider"></span>
+          <button class="switcher-a__btn">
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#3b82f6;margin-right:4px;"></span>
+            远程
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B: Custom dropdown with groups -->
+  <div class="card" onclick="document.querySelectorAll('.card').forEach(c=>c.classList.remove('selected'));this.classList.add('selected')">
+    <div class="card__header">
+      <span class="card__letter">B</span>
+      <span class="card__title">自定义下拉菜单</span>
+      <span class="card__desc">Custom Dropdown</span>
+    </div>
+    <div class="card__preview">
+      <div class="mock-header">
+        <h3>智能问答</h3>
+        <div class="switcher-b">
+          <div class="switcher-b__trigger">
+            <span class="switcher-b__dot switcher-b__dot--local"></span>
+            deepseek-r1:7b
+            <span class="switcher-b__chevron">▾</span>
+          </div>
+          <div class="switcher-b__menu">
+            <div class="switcher-b__group-label">本地模型</div>
+            <div class="switcher-b__option selected">
+              <span class="switcher-b__dot switcher-b__dot--local"></span>
+              deepseek-r1:7b
+              <span class="check">✓</span>
+            </div>
+            <div class="switcher-b__option">
+              <span class="switcher-b__dot switcher-b__dot--local"></span>
+              qwen2.5:7b
+            </div>
+            <div class="switcher-b__group-label">远程 API</div>
+            <div class="switcher-b__option">
+              <span class="switcher-b__dot switcher-b__dot--remote"></span>
+              deepseek-v4-flash
+            </div>
+            <div class="switcher-b__option">
+              <span class="switcher-b__dot switcher-b__dot--remote"></span>
+              claude-sonnet-5
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C: Minimal native-style select -->
+  <div class="card" onclick="document.querySelectorAll('.card').forEach(c=>c.classList.remove('selected'));this.classList.add('selected')">
+    <div class="card__header">
+      <span class="card__letter">C</span>
+      <span class="card__title">极简下拉选择</span>
+      <span class="card__desc">Minimal Select</span>
+    </div>
+    <div class="card__preview">
+      <div class="mock-header">
+        <h3>智能问答</h3>
+        <div class="switcher-c">
+          <span class="switcher-c__label">模型</span>
+          <select class="switcher-c__select">
+            <option>deepseek-r1:7b (本地)</option>
+            <option>qwen2.5:7b (本地)</option>
+            <option>deepseek-v4-flash (远程)</option>
+            <option>claude-sonnet-5 (远程)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -22,6 +22,12 @@ class ChatRequest(BaseModel):
     history: list[dict[str, str]] | None = Field(
         default=None, description="Previous conversation turns"
     )
+    provider: str | None = Field(
+        default=None, description="LLM provider: 'ollama' or 'anthropic'"
+    )
+    model: str | None = Field(
+        default=None, description="Specific model name to use"
+    )
 
 
 class ChatResponse(BaseModel):

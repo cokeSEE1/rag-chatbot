@@ -11,7 +11,7 @@ export function useChat() {
   const historyRef = useRef<{ role: string; content: string }[]>([])
   const abortRef = useRef<AbortController | null>(null)
 
-  const sendMessage = useCallback(async (query: string) => {
+  const sendMessage = useCallback(async (query: string, provider?: string, model?: string) => {
     if (!query.trim()) return
 
     // Abort any in-flight stream before starting a new one
@@ -39,7 +39,7 @@ export function useChat() {
 
     try {
       await sendMessageStream(
-        { query: query.trim(), history: historyRef.current },
+        { query: query.trim(), history: historyRef.current, provider, model },
         {
           onRetrievalStart() {
             // Create the assistant bubble early so the user sees retrieval card first

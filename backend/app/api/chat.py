@@ -13,23 +13,55 @@ from typing import AsyncGenerator
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
-from app.api.dependencies import get_llm_provider, get_retriever
+from app.api.dependencies import get_retriever
+from app.config import get_settings
 from app.models.schemas import ChatRequest, ChatResponse, SourceDoc
-from app.pipeline.generation import build_rag_prompt
+from app.pipeline.generation import (
+    AnthropicProvider,
+    OllamaProvider,
+    build_rag_prompt,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api")
 
 
+def _select_llm(request: ChatRequest):
+    """Return the appropriate LLM provider based on the request.
+
+    When *request.provider* is ``"anthropic"``, returns an AnthropicProvider
+    (using *request.model* if given, otherwise the configured default).
+    Otherwise returns an OllamaProvider.
+    """
+    settings = get_settings()
+
+    if request.provider == "anthropic":
+        model = request.model or settings.anthropic_model
+        logger.info("Using AnthropicProvider model=%s", model)
+        return AnthropicProvider(
+            base_url=settings.anthropic_base_url,
+            api_key=settings.anthropic_api_key,
+            model=model,
+        )
+
+    model = request.model or settings.llm_model
+    logger.info("Using OllamaProvider model=%s", model)
+    return OllamaProvider(
+        base_url=settings.ollama_base_url,
+        model=model,
+    )
+
+
 @router.post("/chat", response_model=ChatResponse)
 async def chat(
     request: ChatRequest,
     retriever=Depends(get_retriever),
-    llm=Depends(get_llm_provider),
 ) -> ChatResponse:
     """Non-streaming RAG chat endpoint."""
     try:
+        llm = _select_llm(request)
+
         # 1. Retrieve relevant documents
         retrieved_docs = retriever.retrieve(request.query)
 
@@ -70,12 +102,13 @@ async def chat(
 async def chat_stream(
     request: ChatRequest,
     retriever=Depends(get_retriever),
-    llm=Depends(get_llm_provider),
 ):
     """Streaming RAG chat endpoint using Server-Sent Events."""
 
     async def event_generator() -> AsyncGenerator[str, None]:
         try:
+            llm = _select_llm(request)
+
             def _format_doc(doc: dict) -> dict:
                 return {
                     "content": doc.get("text", ""),

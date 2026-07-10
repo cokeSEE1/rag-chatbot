@@ -28,6 +28,8 @@ export interface RetrievalInfo {
 export interface ChatRequest {
   query: string;
   history?: { role: string; content: string }[];
+  provider?: string;
+  model?: string;
 }
 
 export interface ChatResponse {

@@ -2,13 +2,23 @@ import { useState, useCallback, useEffect } from 'react'
 import { useChat } from './hooks/useChat'
 import ChatWindow from './components/ChatWindow'
 import DocumentUpload from './components/DocumentUpload'
+import ModelSwitcher from './components/ModelSwitcher'
 import { fetchDocuments } from './api/client'
 import type { DocumentInfo } from './types'
+import type { ModelOption } from './components/ModelSwitcher'
+
+const MODEL_OPTIONS: ModelOption[] = [
+  { name: 'deepseek-r1:7b', provider: 'ollama', label: '本地', desc: '4.7GB' },
+  { name: 'qwen2.5:7b', provider: 'ollama', label: '本地', desc: '4.4GB' },
+  { name: 'deepseek-v4-flash', provider: 'anthropic', label: '远程', desc: 'packyapi' },
+  { name: 'claude-sonnet-5', provider: 'anthropic', label: '远程', desc: 'Anthropic' },
+]
 
 export default function App() {
   const { messages, isLoading, error, sendMessage, clearMessages, setError } = useChat()
   const [documents, setDocuments] = useState<DocumentInfo[]>([])
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [selectedModel, setSelectedModel] = useState<ModelOption>(MODEL_OPTIONS[0])
 
   // Load existing documents on mount
   useEffect(() => {
@@ -21,11 +31,14 @@ export default function App() {
 
   const handleUploadSuccess = useCallback((doc: DocumentInfo) => {
     setDocuments(prev => {
-      // If this file_id already exists, replace it (re-upload); otherwise prepend
       const filtered = prev.filter(d => d.file_id !== doc.file_id)
       return [doc, ...filtered]
     })
   }, [])
+
+  const handleSend = useCallback((query: string) => {
+    sendMessage(query, selectedModel.provider, selectedModel.name)
+  }, [sendMessage, selectedModel])
 
   return (
     <div className="app">
@@ -104,7 +117,14 @@ export default function App() {
         <ChatWindow
           messages={messages}
           isLoading={isLoading}
-          onSend={sendMessage}
+          onSend={handleSend}
+          headerRight={
+            <ModelSwitcher
+              options={MODEL_OPTIONS}
+              selected={selectedModel}
+              onChange={setSelectedModel}
+            />
+          }
         />
       </main>
     </div>
